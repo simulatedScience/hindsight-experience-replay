@@ -1,0 +1,86 @@
+\section{Introduction and motivation}
+Machine learning is quickly becoming more and more popular, being applied to a vast range of tasks. Yet the most popular technique so far, supervised learning, requires massive amounts of data being available for any task. Reinforcement learning is a technique, that generates it's own data, allowing agents to learn on their own with very little domain specific knowledge required.
+Hindsight Experience replay was introduced in \parencite{HER_paper} to improve RL-agent's performance on tasks with very sparse rewards by being able to learn from undesirable outcomes more efficiently.
+
+While sparse 0-1 rewards are usually easy to define, it is obvious that any initally random agent will have difficulty ever achieving a positive reward in such a setting. Therefore more detailed rewards can be defined to guide the agent towards the goal. With that the reward function is also a way to include prior knowledge we may have about solutions to the problem. Since shaped rewards work well for regular DQN agents, it is important to investigate how they interact with the new technique - Hindsight Experience Replay (see \ref{goals:shaped_rewards}). We will investigate two different problems with two 
+%
+%
+\section{Definitions}
+
+%
+%
+\section{Experiment description}
+\subsection{Experiment goals \label{section:goals}}
+There are several goals for the experiments:
+\begin{enumerate}
+    \item Compare learning speed of DQN's with and without HER. \label{goals:learning_speed}
+    \item Compare solvability of problems of various difficulty using DQN's with and without HER. \label{goals:solvability}
+    \item Find out how HER interacts with shaped rewards. \label{goals:shaped_rewards}
+\end{enumerate}
+\subsection{Learning environments}
+We use two different learning environments to perform all experiments.
+The first, the Bitflip problem, was also used in \parencite{HERPaper}. The second problem, a gridworld environment, is a typical example problem for Reinforcement Learning since it allows for a wide range of customizations. This environment serves as a replacement for the robot-arm control problem that is used in \parencite{HERPaper}. A notable difference is, that here we only use discrete problems, whereas the robot-arm control has a contiuous action space and the authors used a slightly more advanced technique - DDQN - to deal with that.
+
+Both problems are easily scalable to increase or decrease their difficulty.
+
+\subsubsection{Bitflip problem}
+The first environment models the Bitflip problem: Starting with a random binary sequence of length $n\in\N$, the agent can flip a single bit at a time to achieve a given goal state.
+By default the goal is the sequence $(1,1,...,1)$.
+
+We use a 0-1 reward, that is 1, if the goal is reached and 0 in all other states.
+
+This problem was used in \parencite{HERPaper} as a problem that's very hard to learn with regular Q-learning and sparse rewards, because with random actions the agent almost never experiences positive rewards making it unable to learn.
+It was shown in \parencite{HERPaper}, that learning with HER can solve the problem for much larger $n$.
+
+In \parencite[Appendix A]{HERPaper}, it is stated, that the neural network used for this problem had a single hidden layer with 256 neurons. The Input and output layers have $n$ neurons for regular Q-learning and $2n$ inputs for the network used with HER since that also needs to accept the goal state as an input.
+There are however many parameters, which have not been specified in \parencite{HERPaper}.
+%
+\subsubsection{Gridworld environment}
+The second envornment is a gridworld as introduced in the presentations. An agent can move along the cardinal directions on a cartesian grid with step size $1$. The agent starts on one square and the episode ends if it has reached a predefined goal square. There are some randomly placed walls on the grid where the agent cannot move. The edge of the square grid is treated as walls.
+All actions are legal at all times. If the agent chooses an action that would move it into a wall, it does not move at all instead.
+%
+\subsection{Experiment setup}
+\subsubsection{Reward functions}
+In this implementation all reward functions depend only on the current state and the goal state. Since the goal state is not constant when using HER, we also pass that to the reward functions. Since rewards are typically maximized in Reinforcement Learning, we add a negative sign to the last three reward functions.
+Here let $s \in S$ be a state and $g \in S$ the desired goal state.
+
+\textbf{0-1 reward}
+Reward 1 if goal is reached, 0 otherwise:
+$$R_{01}(s, g) = \cases^{1 \text{if} s=g}_{0 \text{else}}$$
+
+\textbf{MSE reward}
+Use mean squared error between state and goal as reward:
+$$R_{\text{MSE}}(s, g) = -\frac{1}{|s|} \sum_{i=1}^{|s|} \left| s_i - g_i \right|^2$$
+
+\textbf{MAE reward}
+Use mean absolute error between state and goal as reward:
+$$R_M(s, g) = -\frac{1}{|s|} \sum_{i=1}^{|s|} \left|s_i - g_i\right|$$
+
+\textbf{Euklidean reward}
+Use Euclidean distance between state and goal as reward:
+$$R_E(s, g) = -\sqrt{\sum_{i=1}^{|s|} \left(s_i - g_i\right)^2}$$
+
+\textbf{Manhatten reward}
+Use Manhatten distance between state and goal as reward:
+$$R_M(s, g) = -\sum_{i=1}^{|s|} \left|s_i - g_i\right|$$
+
+\subsubsection{Measurements during training}
+After each epoch of training, the current success rate is calculated from the total number of successful episodes so far:
+$$SR = \frac{\text{Nbr. of successful episodes}}{\text{Nbr. of played episodes}}$$
+
+Training is stopped when the success rate is higher than $99.5\%$ to speed up the experiments.
+
+%
+%
+\section{Experiment results \label{sec:experiments}}
+
+%
+%
+\section{Further questions}
+
+%
+%
+\section{Conclusion}
+
+%
+%
