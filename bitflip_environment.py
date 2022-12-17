@@ -16,9 +16,9 @@ class BitFlipEnvironment:
         n_bits: number of bits in the bit string
         reward_type: "01" or "hamming"
     """
-    self.bits = n_bits
-    self.state = torch.zeros((self.bits, ))
-    self.goal = torch.zeros((self.bits, ))
+    self.n_bits = n_bits
+    self.state = torch.zeros((self.n_bits, ))
+    self.goal = torch.zeros((self.n_bits, ))
     if reward_type == "01":
       self.reward_function = reward_01
     elif reward_type.lower() == "mse":
@@ -29,10 +29,15 @@ class BitFlipEnvironment:
       raise ValueError("Invalid reward type. Valid options are: 01, mse, mae")
     self.reset()
 
+  def get_num_actions(self):
+    return self.n_bits
+
+  def get_state_size(self):
+    return self.n_bits*2
 
   def reset(self):
-    self.state = torch.randint(2, size=(self.bits, ), dtype=torch.float)
-    self.goal = torch.randint(2, size=(self.bits, ), dtype=torch.float)
+    self.state = torch.randint(2, size=(self.n_bits, ), dtype=torch.float)
+    self.goal = torch.randint(2, size=(self.n_bits, ), dtype=torch.float)
     # reset again if state = goal
     if torch.equal(self.state, self.goal):
         self.reset()
@@ -55,6 +60,9 @@ class BitFlipEnvironment:
     reward = self.reward_function(state, goal)
     # reward = torch.tensor(1.0 if done else 0.0)
     return reward, done
+
+  def __str__(self):
+    return f"BitFlipEnvironment(n_bits={self.n_bits})"
 
 
 

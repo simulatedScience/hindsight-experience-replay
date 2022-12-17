@@ -21,7 +21,8 @@ class DDQNAgent:
     discount_factor: float = 0.98,
     learning_rate: float = 0.001,
     batch_size: int = 128,
-    buffer_size: int = 1e6):
+    buffer_size: int = 1e6,
+    hidden_size: int = 256):
     # environment parameters
     self.state_size = state_size
     self.num_actions = num_actions
@@ -33,8 +34,8 @@ class DDQNAgent:
 
     self.memory = ReplayBuffer(int(buffer_size))
 
-    self.Q_network = DuelingMLP(state_size, num_actions)
-    self.target_network = DuelingMLP(state_size, num_actions)
+    self.Q_network = DuelingMLP(state_size, num_actions, hidden_size)
+    self.target_network = DuelingMLP(state_size, num_actions, hidden_size)
     self.update_target_network()
 
     self.optimizer = optim.Adam(self.Q_network.parameters(), lr=self.learning_rate)
@@ -89,11 +90,11 @@ class DDQNAgent:
     self.optimizer.step()
 
 class DuelingMLP(nn.Module):
-  def __init__(self, state_size, num_actions):
+  def __init__(self, state_size, num_actions, hidden_size=256):
     super().__init__()
-    self.linear = nn.Linear(state_size, 256)
-    self.value_head = nn.Linear(256, 1)
-    self.advantage_head = nn.Linear(256, num_actions)
+    self.linear = nn.Linear(state_size, hidden_size)
+    self.value_head = nn.Linear(hidden_size, 1)
+    self.advantage_head = nn.Linear(hidden_size, num_actions)
 
   def forward(self, x):
     x = x.unsqueeze(0) if len(x.size()) == 1 else x

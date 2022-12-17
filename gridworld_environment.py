@@ -23,7 +23,7 @@ class GridworldEnvironment:
     self.size = size
     self.goal_type = goal_type
     self.state = torch.tensor([0,0])
-    self.goal = torch.tensor([self.size-1, self.size-1])
+    self.goal = torch.tensor([1, 1])
     self.world = torch.zeros((self.size, self.size))
     if reward_type == "01":
       self.reward_function = reward_01
@@ -33,8 +33,23 @@ class GridworldEnvironment:
       self.reward_function = reward_manhattan
     else:
       raise ValueError("Invalid reward type. Valid options are: 01, euklidean, manhattan")
+    self.initial_world = torch.zeros((self.size, self.size))
+    self.generate_walls()
     self.reset()
 
+
+  def get_num_actions(self):
+    return 4
+
+
+  def get_state_size(self):
+    return 2
+
+  def generate_walls(self):
+    """
+    Generate walls in the gridworld for the saved size. Walls are represented by 1.
+    """
+    
 
   def reset(self) -> Tuple[torch.tensor, torch.tensor]:
     """
@@ -54,35 +69,34 @@ class GridworldEnvironment:
           self.reset()
     else:
       self.goal = torch.tensor([self.size-1, self.size-1])
-    self._place_walls()
+    self.world = self.initial_world.clone()
     return self.state.clone(), self.goal.clone()
 
 
   def step(self, action: int) -> Tuple[torch.tensor, torch.tensor, bool]:
     """
-    Move the agent in the gridworld.
+    Move the agent in the gridworld. If the agent hits a wall or edge of the grid, it stays in the same position.
     Allowed actions are: 0 = up, 1 = right, 2 = down, 3 = left
 
     Args:
         action: 0 = up, 1 = right, 2 = down, 3 = left
     """
     # get current position
-    x, y = torch.where(self.state == 1)
-    x, y = x.item(), y.item()
+    x, y = self.state
     # move
-    if action == 0:
-      x = max(0, x - 1)
-    elif action == 1:
-      y = min(self.size - 1, y + 1)
-    elif action == 2:
-      x = min(self.size - 1, x + 1)
-    elif action == 3:
-      y = max(0, y - 1)
+    if action == 0: # up
+      new_x = max(0, x - 1)
+    elif action == 1: # right
+      new_y = min(self.size - 1, y + 1)
+    elif action == 2: # down
+      new_x = min(self.size - 1, x + 1)
+    elif action == 3: # left
+      new_y = max(0, y - 1)
     else:
       raise ValueError("Invalid action. Valid options are: 0, 1, 2, 3")
     # update state
-    self.state = torch.zeros((self.size, self.size))
-    self.state[x, y] = 1
+    if not self.world[new_x, new_y] > 0: # if not wall at new position
+      self.state = torch.tensor([new_x, new_y])
     reward, done = self.compute_reward(self.state, self.goal)
     return self.state.clone(), reward, done
 

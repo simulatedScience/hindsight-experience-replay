@@ -11,7 +11,32 @@ from ddqn_agent import DDQNAgent, Experience
 
 class RLExperiments:
   def __init__(self, problem):
-    self.problem = problem
+    self.problem_type = problem
+    self.problem: self.problem_type = None
+    self.dqn_params = {
+      "discount_factor": 0.98,
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "buffer_size": 1e6,
+      "hidden_size": 256
+    }
+
+  def config_dqn(self,
+    discount_factor: float = 0.98,
+    learning_rate: float = 0.001,
+    batch_size: int = 128,
+    buffer_size: int = 1e6,
+    hidden_size: int = 256):
+    """
+    save parameters for DQN agent to be used in all future experiments (or until this method is called again).
+    """
+    self.dqn_params = {
+      "discount_factor": discount_factor,
+      "learning_rate": learning_rate,
+      "batch_size": batch_size,
+      "buffer_size": buffer_size,
+      "hidden_size": hidden_size
+    }
 
   def train(self,
       problem_size=10,
@@ -20,9 +45,7 @@ class RLExperiments:
       eps_max=0.2,
       eps_min=0.0,
       exploration_fraction=0.7,
-      reward_type="01",
-      buffer_size=2048,
-      batch_size=64):
+      reward_type="01"):
     """
     Training loop for the bit flip experiment introduced in https://arxiv.org/pdf/1707.01495.pdf using DQN or DQN with
     hindsight experience replay. 
@@ -42,18 +65,21 @@ class RLExperiments:
     Returns:
         (list): List of success rates over the epochs.
     """
+    # initialize problem
+    self.problem = self.problem_type(problem_size, reward_type)
 
     # Parameters taken from the paper, some additional once are found in the constructor of the DQNAgent class.
-    future_k = 2
+    future_k = 4
     num_cycles = 50
     num_episodes = 16
     num_opt_steps = 40
 
-    num_actions = problem_size
-    state_size = 2 * problem_size
-    agent = DDQNAgent(state_size, num_actions,
-        batch_size=batch_size,
-        buffer_size=buffer_size)
+    state_size = self.problem.get_state_size()
+    num_actions = self.problem.get_num_actions()
+    agent = DDQNAgent(
+        state_size, 
+        num_actions,
+        **self.dqn_params)
 
     success_rate = 0.0
     success_rates = []
@@ -157,7 +183,7 @@ class RLExperiments:
     plt.xlabel("Number of bits")
     plt.ylabel("Final success rate")
     plt.title(f"Final success HER for DQN - {max_n_epochs} epochs")
-    plt.grid(color="dddddd")
+    plt.grid(color="#dddddd")
     filename = f"exp2_{max_problem_size}_bits_{max_n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
     plt.show()
