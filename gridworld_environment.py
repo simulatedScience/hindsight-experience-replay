@@ -7,8 +7,11 @@ from typing import Tuple
 
 import torch
 
+from reward_functions import reward_01, reward_euklidean, reward_manhattan
+from maze_generator import generate_maze
+
 class GridworldEnvironment:
-  def __init__(self, size, reward_type="01", goal_type="random"):
+  def __init__(self, size, reward_type="01", goal_type="random", wall_percentage=0.3, path_eps=0.4):
     """
     Initialize the gridworld environment with a `size` x `size` grid.
     States are the position of the agent in the grid.
@@ -22,9 +25,8 @@ class GridworldEnvironment:
     """
     self.size = size
     self.goal_type = goal_type
-    self.state = torch.tensor([0,0])
-    self.goal = torch.tensor([1, 1])
-    self.world = torch.zeros((self.size, self.size))
+    self.wall_percentage = wall_percentage
+    self.path_eps = path_eps
     if reward_type == "01":
       self.reward_function = reward_01
     elif reward_type.lower() == "euklidean":
@@ -33,8 +35,13 @@ class GridworldEnvironment:
       self.reward_function = reward_manhattan
     else:
       raise ValueError("Invalid reward type. Valid options are: 01, euklidean, manhattan")
-    self.initial_world = torch.zeros((self.size, self.size))
-    self.generate_walls()
+    # initialize maze, state and goal
+    self.state: torch.tensor = None
+    self.goal: torch.tensor = None
+    self.n_goals: int = None
+    self.initial_world: torch.tensor = None
+    self.world: torch.tensor = None
+    self.generate_maze()
     self.reset()
 
 
@@ -45,11 +52,16 @@ class GridworldEnvironment:
   def get_state_size(self):
     return 2
 
-  def generate_walls(self):
+  def generate_maze(self):
     """
     Generate walls in the gridworld for the saved size. Walls are represented by 1.
     """
-    
+    maze, start, goal = generate_maze(self.size, self.size, self.wall_percentage, self.path_eps)
+    self.initial_world = torch.tensor(maze)
+    self.start_state = torch.tensor(start)
+    self.goal = torch.tensor(goal)
+    # number of potential goals
+    self.n_goals = torch.sum(self.initial_world == 0) - 1 # subtract starting position
 
   def reset(self) -> Tuple[torch.tensor, torch.tensor]:
     """
@@ -60,16 +72,24 @@ class GridworldEnvironment:
         goal: a random goal that is not the start state
     """
     # reset state to start position
-    self.state = torch.tensor([0,0])
-    # choose random square as goal
-    if self.goal_type == "random":
-      self.goal = torch.randint(self.size, size=(2, ), dtype=torch.float)
-      # reset again if state = goal
-      if torch.equal(self.state, self.goal):
-          self.reset()
-    else:
-      self.goal = torch.tensor([self.size-1, self.size-1])
+    self.state = self.start_state.clone()
     self.world = self.initial_world.clone()
+    if self.goal_type == "random":
+      # choose a random square in world that is not a wall or the start state.
+      goal_index = torch.randint(0, self.n_goals, (1,))[0]
+      # choose the goal corresponding to the index
+      for i in range(self.size):
+        for j in range(self.size):
+          if self.world[i, j] == 0:
+            if goal_index == 0 and (i, j) != (self.state[0], self.state[1]):
+              self.goal = torch.tensor([i, j])
+              break
+            else:
+              goal_index -= 1
+        else:
+          continue
+        break
+
     return self.state.clone(), self.goal.clone()
 
 
@@ -83,15 +103,16 @@ class GridworldEnvironment:
     """
     # get current position
     x, y = self.state
+    new_x, new_y = x, y
     # move
     if action == 0: # up
-      new_x = max(0, x - 1)
-    elif action == 1: # right
       new_y = min(self.size - 1, y + 1)
-    elif action == 2: # down
+    elif action == 1: # right
       new_x = min(self.size - 1, x + 1)
-    elif action == 3: # left
+    elif action == 2: # down
       new_y = max(0, y - 1)
+    elif action == 3: # left
+      new_x = max(0, x - 1)
     else:
       raise ValueError("Invalid action. Valid options are: 0, 1, 2, 3")
     # update state
@@ -106,42 +127,8 @@ class GridworldEnvironment:
     reward = self.reward_function(state, goal)
     return reward, done
 
-
-def reward_01(state: torch.tensor, goal: torch.tensor) -> torch.tensor:
-  """
-  Compute the 0-1 reward for the state and the goal (1 if state == goal, 0 otherwise).
-
-  Args:
-      state (torch.tensor): the current state
-      goal (torch.tensor): the goal state
-
-  Returns:
-      torch.tensor: 1 if state == goal, 0 otherwise
-  """
-  return torch.tensor(1.0 if torch.equal(state, goal) else 0.0)
-
-def reward_euklidean(state: torch.tensor, goal: torch.tensor):
-  """
-  Compute the negative euklidean distance between the state and the goal.
-
-  Args:
-      state (torch.tensor): the current state
-      goal (torch.tensor): the goal state
-
-  Returns:
-      torch.tensor: the euklidean distance between the state and the goal
-  """
-  return -torch.norm(state - goal)
-
-def reward_manhattan(state: torch.tensor, goal: torch.tensor):
-  """
-  Compute the negative manhattan distance between the state and the goal.
-
-  Args:
-      state (torch.tensor): the current state
-      goal (torch.tensor): the goal state
-
-  Returns:
-      torch.tensor: the manhattan distance between the state and the goal
-  """
-  return -torch.sum(torch.abs(state - goal))
+  def __str__(self) -> str:
+    """
+    return gridworld size
+    """
+    return f"Gridworld({self.size}x{self.size})"

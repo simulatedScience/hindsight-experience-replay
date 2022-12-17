@@ -7,6 +7,8 @@ from typing import Tuple
 
 import torch
 
+from reward_functions import reward_01, reward_mse, reward_mae
+
 class BitFlipEnvironment:
   def __init__(self, n_bits, reward_type="01"):
     """
@@ -62,49 +64,4 @@ class BitFlipEnvironment:
     return reward, done
 
   def __str__(self):
-    return f"BitFlipEnvironment(n_bits={self.n_bits})"
-
-
-
-def reward_01(state: torch.tensor, goal: torch.tensor):
-  """
-  Reward 1 for success (state == goal), 0 otherwise.
-
-  Args:
-      state (torch.tensor): Current state.
-      goal (torch.tensor): Goal state.
-
-  Returns:
-      (torch.tensor): Reward
-      (bool): True if state == goal, False otherwise.
-  """
-  done = torch.equal(state, goal)
-  return torch.tensor(1.0 if done else 0.0)
-
-
-def reward_mse(state: torch.tensor, goal: torch.tensor):
-  """
-  Reward is the negative mean squared error between state and goal.
-
-  Args:
-      state (torch.tensor): Current state.
-      goal (torch.tensor): Goal state.
-
-  Returns:
-      (torch.tensor): Reward
-  """
-  return -torch.norm(state - goal, p=2)
-
-
-def reward_mae(state: torch.tensor, goal: torch.tensor):
-  """
-  Reward is the negative mean absolute error between state and goal.
-
-  Args:
-      state (torch.tensor): Current state.
-      goal (torch.tensor): Goal state.
-
-  Returns:
-      (torch.tensor): Reward
-  """
-  return -torch.norm(state - goal, p=1)
+    return f"BitFlip({self.n_bits}_bits)"

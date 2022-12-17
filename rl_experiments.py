@@ -39,13 +39,13 @@ class RLExperiments:
     }
 
   def train(self,
-      problem_size=10,
-      num_epochs=10,
-      hindsight_replay=True,
-      eps_max=0.2,
-      eps_min=0.0,
-      exploration_fraction=0.7,
-      reward_type="01"):
+      problem_size: int = 10,
+      num_epochs: int = 10,
+      hindsight_replay: bool = True,
+      eps_max: float = 0.2,
+      eps_min: float = 0.0,
+      exploration_fraction: float = 0.7,
+      reward_type: str = "01"):
     """
     Training loop for the bit flip experiment introduced in https://arxiv.org/pdf/1707.01495.pdf using DQN or DQN with
     hindsight experience replay. 
@@ -60,7 +60,7 @@ class RLExperiments:
         eps_min (float): Minimum exploration rate.
         exploration_fraction (float): Fraction of the total number of epochs over which to decay the exploration rate
             from eps_max to eps_min.
-        reward_type (str): Reward function to use. Can be either "01", "mse" or "mae".
+        reward_type (str): Reward function to use, defaults to "01". Possible reward functions depend on the problem.
 
     Returns:
         (list): List of success rates over the epochs.
@@ -98,8 +98,8 @@ class RLExperiments:
           for step in range(problem_size):
             state_ = torch.cat((state, goal))
             action = agent.take_action(state_, eps)
-            next_state, reward_type, done = self.problem.step(action.item())
-            episode_trajectory.append(Experience(state, action, reward_type, next_state, done))
+            next_state, reward, done = self.problem.step(action.item())
+            episode_trajectory.append(Experience(state, action, reward, next_state, done))
             state = next_state
             if done:
               successes += 1
@@ -109,9 +109,9 @@ class RLExperiments:
           steps_taken = step
           for t in range(steps_taken):
             # Standard experience replay
-            state, action, reward_type, next_state, done = episode_trajectory[t]
+            state, action, reward, next_state, done = episode_trajectory[t]
             state_, next_state_ = torch.cat((state, goal)), torch.cat((next_state, goal))
-            agent.push_experience(state_, action, reward_type, next_state_, done)
+            agent.push_experience(state_, action, reward, next_state_, done)
 
             # Hindsight experience replay with future strategy
             if hindsight_replay:
@@ -160,7 +160,7 @@ class RLExperiments:
     plt.grid(color="#dddddd")
     filename = f"{self.problem}_exp1_{problem_size}_bits_{n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
-    plt.show()
+    # plt.show()
 
   def experiment_2(self, max_problem_size=30, max_n_epochs=30, problem_size_step=5):
     """
@@ -184,21 +184,23 @@ class RLExperiments:
     plt.ylabel("Final success rate")
     plt.title(f"Final success HER for DQN - {max_n_epochs} epochs")
     plt.grid(color="#dddddd")
-    filename = f"exp2_{max_problem_size}_bits_{max_n_epochs}_epochs.png"
+    filename = f"{self.problem}_exp2_{max_problem_size}_bits_{max_n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
-    plt.show()
+    # plt.show()
 
 
-  def experiment_3(self, problem_size=25, n_epochs=25):
+  def experiment_3(self, rewards, problem_size=25, n_epochs=25):
     """
     experiment_3 evaluates the performance of DQN with hindsight experience replay on the bit flip environment for different reward functions.
 
     Args:
+        rewards (list): list of reward functions to evaluate.
         problem_size (int, optional): _description_. Defaults to 50.
         n_epochs (int, optional): _description_. Defaults to 50.
     """
+    linestyles = ["-", "--", "-.", ":"]*(len(rewards)//4 + 1)
     print("starting experiment 3")
-    for reward, linestyle in zip(["01", "mse"], ["-", "--"]):
+    for reward, linestyle in zip(rewards, linestyles):
       for her in [True, False]:
         label = "HER" if her else "DQN"
         print(f"start training with {label}, {reward}-reward")
@@ -210,6 +212,6 @@ class RLExperiments:
     plt.ylabel("Success rate")
     plt.title(f"HER for DQN - {problem_size} bits")
     plt.grid(color="#dddddd")
-    filename = f"exp3_{problem_size}_bits_{n_epochs}_epochs.png"
+    filename = f"{self.problem}_exp3_{problem_size}_bits_{n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
-    plt.show()
+    # plt.show()
