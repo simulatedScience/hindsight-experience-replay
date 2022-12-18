@@ -12,9 +12,7 @@ from replay_buffer import ReplayBuffer
 Experience = namedtuple("Experience", field_names="state action reward next_state done")
 
 class DDQNAgent:
-
   """ Double-DQN with Dueling Architecture """
-
   def __init__(self,
     state_size: int,
     num_actions: int,
@@ -40,11 +38,14 @@ class DDQNAgent:
 
     self.optimizer = optim.Adam(self.Q_network.parameters(), lr=self.learning_rate)
 
+
   def push_experience(self, state, action, reward, next_state, done):
     self.memory.push(Experience(state, action, reward, next_state, done))
 
+
   def update_target_network(self):
     self.target_network.load_state_dict(self.Q_network.state_dict())
+
 
   def take_action(self, state, epsilon):
     if random.random() > epsilon:
@@ -52,9 +53,11 @@ class DDQNAgent:
     else:
       return torch.randint(self.num_actions, size=())
 
+
   def greedy_action(self, state):
     with torch.no_grad():
       return self.Q_network(state).argmax()
+
 
   def optimize_model(self):
     if len(self.memory) < self.train_start:
@@ -89,12 +92,14 @@ class DDQNAgent:
     loss.backward()
     self.optimizer.step()
 
+
 class DuelingMLP(nn.Module):
   def __init__(self, state_size, num_actions, hidden_size=256):
     super().__init__()
     self.linear = nn.Linear(state_size, hidden_size)
     self.value_head = nn.Linear(hidden_size, 1)
     self.advantage_head = nn.Linear(hidden_size, num_actions)
+
 
   def forward(self, x):
     x = x.unsqueeze(0) if len(x.size()) == 1 else x

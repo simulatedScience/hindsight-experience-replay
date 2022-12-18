@@ -8,9 +8,10 @@ import torch
 import matplotlib.pyplot as plt
 
 from ddqn_agent import DDQNAgent, Experience
+from rl_problem import RLProblem
 
 class RLExperiments:
-  def __init__(self, problem):
+  def __init__(self, problem: RLProblem):
     self.problem_type = problem
     self.problem: self.problem_type = None
     self.dqn_params = {
@@ -152,13 +153,17 @@ class RLExperiments:
       print(f"start training with {label}")
       success = self.train(problem_size, n_epochs, her)
       label += f" (01)"
-      plt.plot(success, linestyle="-", label=label)
+      plt.plot(
+          range(1, n_epochs + 1),
+          success,
+          linestyle="-",
+          label=label)
     plt.legend()
     plt.xlabel("Epoch")
     plt.ylabel("Success rate")
     plt.title(f"HER for DQN - {problem_size} bits")
     plt.grid(color="#dddddd")
-    filename = f"{self.problem}_exp1_{problem_size}_bits_{n_epochs}_epochs.png"
+    filename = f"{self.problem}_exp1_{n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
     # plt.show()
 
@@ -171,20 +176,21 @@ class RLExperiments:
         max_n_epochs (int, optional): maximum number of epochs to train for. Defaults to 50.
     """
     print("starting experiment 2")
+    problem_sizes = list(range(problem_size_step, max_problem_size + 1, problem_size_step))
     for her in [True, False]:
       final_success_rates = []
       label = "HER" if her else "DQN"
-      for problem_size in range(problem_size_step, max_problem_size + 1, problem_size_step):
+      for problem_size in problem_sizes:
         print(f"start training with {label}, {problem_size} bits")
         success = self.train(problem_size, max_n_epochs, her)
         final_success_rates.append(success[-1])
-      plt.plot(final_success_rates, linestyle="-", label=label)
+      plt.plot(problem_sizes, final_success_rates, linestyle="-", label=label)
     plt.legend()
     plt.xlabel("Number of bits")
     plt.ylabel("Final success rate")
     plt.title(f"Final success HER for DQN - {max_n_epochs} epochs")
     plt.grid(color="#dddddd")
-    filename = f"{self.problem}_exp2_{max_problem_size}_bits_{max_n_epochs}_epochs.png"
+    filename = f"{self.problem}_exp2_{max_n_epochs}_epochs_{problem_size_step}_step.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
     # plt.show()
 
@@ -206,12 +212,12 @@ class RLExperiments:
         print(f"start training with {label}, {reward}-reward")
         success = self.train(problem_size, n_epochs, her, reward_type=reward)
         label += f" ({reward})"
-        plt.plot(success, linestyle=linestyle, label=label)
+        plt.plot(range(1, n_epochs + 1), success, linestyle=linestyle, label=label)
     plt.legend()
     plt.xlabel("Epoch")
     plt.ylabel("Success rate")
     plt.title(f"HER for DQN - {problem_size} bits")
     plt.grid(color="#dddddd")
-    filename = f"{self.problem}_exp3_{problem_size}_bits_{n_epochs}_epochs.png"
+    filename = f"{self.problem}_exp3_{n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
     # plt.show()

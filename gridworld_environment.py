@@ -7,10 +7,11 @@ from typing import Tuple
 
 import torch
 
+from rl_problem import RLProblem
 from reward_functions import reward_01, reward_euklidean, reward_manhattan
 from maze_generator import generate_maze
 
-class GridworldEnvironment:
+class GridworldEnvironment(RLProblem):
   def __init__(self, size, reward_type="01", goal_type="random", wall_percentage=0.3, path_eps=0.4):
     """
     Initialize the gridworld environment with a `size` x `size` grid.
@@ -50,16 +51,16 @@ class GridworldEnvironment:
 
 
   def get_state_size(self):
-    return 2
+    return 4 # position and goal
 
   def generate_maze(self):
     """
     Generate walls in the gridworld for the saved size. Walls are represented by 1.
     """
     maze, start, goal = generate_maze(self.size, self.size, self.wall_percentage, self.path_eps)
-    self.initial_world = torch.tensor(maze)
-    self.start_state = torch.tensor(start)
-    self.goal = torch.tensor(goal)
+    self.initial_world = torch.tensor(maze, dtype=torch.int8)
+    self.start_state = torch.tensor(start, dtype=torch.float32) / (self.size - 1)
+    self.goal = torch.tensor(goal, dtype=torch.float32) / (self.size - 1)
     # number of potential goals
     self.n_goals = torch.sum(self.initial_world == 0) - 1 # subtract starting position
 
@@ -82,7 +83,7 @@ class GridworldEnvironment:
         for j in range(self.size):
           if self.world[i, j] == 0:
             if goal_index == 0 and (i, j) != (self.state[0], self.state[1]):
-              self.goal = torch.tensor([i, j])
+              self.goal = torch.tensor([i, j]) / (self.size - 1)
               break
             else:
               goal_index -= 1
@@ -102,7 +103,8 @@ class GridworldEnvironment:
         action: 0 = up, 1 = right, 2 = down, 3 = left
     """
     # get current position
-    x, y = self.state
+    # get x,y as int
+    x, y = int(self.state[0] * (self.size - 1)), int(self.state[1] * (self.size - 1))
     new_x, new_y = x, y
     # move
     if action == 0: # up
@@ -117,7 +119,7 @@ class GridworldEnvironment:
       raise ValueError("Invalid action. Valid options are: 0, 1, 2, 3")
     # update state
     if not self.world[new_x, new_y] > 0: # if not wall at new position
-      self.state = torch.tensor([new_x, new_y])
+      self.state = torch.tensor([new_x, new_y]) / (self.size - 1)
     reward, done = self.compute_reward(self.state, self.goal)
     return self.state.clone(), reward, done
 

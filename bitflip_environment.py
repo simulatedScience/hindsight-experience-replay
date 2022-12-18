@@ -7,9 +7,10 @@ from typing import Tuple
 
 import torch
 
+from rl_problem import RLProblem
 from reward_functions import reward_01, reward_mse, reward_mae
 
-class BitFlipEnvironment:
+class BitFlipEnvironment(RLProblem):
   def __init__(self, n_bits, reward_type="01"):
     """
     Initialize the bit flip environment with `n_bits` bits.

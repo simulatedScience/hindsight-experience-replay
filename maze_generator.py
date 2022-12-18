@@ -39,6 +39,9 @@ def generate_maze(width: int, height: int, wall_percentage: float = 0.5, epsilon
   # 5. clean up any inaccessible free positions
   maze = cleanup_maze(maze, start_pos)
 
+  print(f"generated maze of size {width}x{height} with {wall_percentage*100:.0f}% walls and {epsilon}-greedy path generation:")
+  print_maze(maze, start_pos, goal_pos)
+
   return maze, start_pos, goal_pos
 
 
@@ -143,13 +146,18 @@ def get_new_pos(pos: np.ndarray, action: int, maze: np.ndarray, ignore_walls: bo
   return np.array([new_x, new_y], dtype=np.int32)
 
 
-def print_maze(grid: np.ndarray):
+def print_maze(grid: np.ndarray, start_pos: np.ndarray = None, goal_pos: np.ndarray = None):
   """
   prints the maze. ⬜ = empty space, ⬛ = wall
 
   Args:
       grid (np.ndarray): the grid with walls represented by 1 and empty space by 0
   """
+  grid = grid.copy()
+  if not start_pos is None:
+    grid[start_pos[0], start_pos[1]] = 2
+  if not goal_pos is None:
+    grid[goal_pos[0], goal_pos[1]] = 3
   for row in grid:
     for cell in row:
       if cell == 0:
@@ -160,7 +168,7 @@ def print_maze(grid: np.ndarray):
         print("🟢", end="")
       elif cell == 3:
         print("🔴", end="")
-    print()
+    print() # new line
 
 def reward_manhattan(state: np.ndarray, goal: np.ndarray):
   """
