@@ -188,7 +188,7 @@ class RLExperiments:
     plt.plot(problem_sizes, final_success_rates[1], linestyle="-", label="HER")
     plt.plot(problem_sizes, final_success_rates[0], linestyle="-", label="DQN")
     plt.legend()
-    plt.xlabel("Number of bits")
+    plt.xlabel("problem size")
     plt.ylabel("Final success rate")
     plt.title(f"Exp. 2: Final success HER for DQN - {problem}, {max_n_epochs} epochs")
     plt.grid(color="#dddddd")

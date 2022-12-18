@@ -1,11 +1,14 @@
 \section{Introduction and motivation}
 Machine learning is quickly becoming more and more popular, being applied to a vast range of tasks. Yet the most popular technique so far, supervised learning, requires massive amounts of data being available for any task. Reinforcement learning is a technique, that generates it's own data, allowing agents to learn on their own with very little domain specific knowledge required.
-Hindsight Experience replay was introduced in \parencite{HER_paper} to improve RL-agent's performance on tasks with very sparse rewards by being able to learn from undesirable outcomes more efficiently.
+Hindsight Experience replay was introduced in \parencite{HERPaper} to improve RL-agent's performance on tasks with very sparse rewards by being able to learn from undesirable outcomes more efficiently.
 
-While sparse 0-1 rewards are usually easy to define, it is obvious that any initally random agent will have difficulty ever achieving a positive reward in such a setting. Therefore more detailed rewards can be defined to guide the agent towards the goal. With that the reward function is also a way to include prior knowledge we may have about solutions to the problem. Since shaped rewards work well for regular DQN agents, it is important to investigate how they interact with the new technique - Hindsight Experience Replay (see \ref{goals:shaped_rewards}). We will investigate two different problems with two 
+While sparse 0-1 rewards are usually easy to define, it is obvious that any initally random agent will have difficulty ever achieving a positive reward in such a setting. Therefore more detailed rewards can be defined to guide the agent towards the goal. With that the reward function is also a way to include prior knowledge we may have about solutions to the problem. Since shaped rewards work well for regular DQN agents, it is important to investigate how they interact with the new technique - Hindsight Experience Replay (see \ref{goals:shaped_rewards}).
 %
 %
-\section{Definitions}
+\section{Hindsight Experience Replay}
+As introduced in \parencite{HERPaper} Hindsight Experience Replay (HER)  is a technique to improve the performance of RL-agents on tasks with very sparse rewards. It does so by being able to learn from undesirable outcomes more efficiently. In traditional Reinforcement Learning it is common to use a replay buffer to store experiences in the form of transitions $(s, a, r, s')$ where $s$ is the current state, $a$ the action taken, $r$ the reward received and $s'$ the next state. The agent then samples from this buffer to train it's neural network. This improves the agent's sample efficiency.
+
+HER adds extra transitions to this replay buffer to learn from mistakes. It does so by additionally storing a goal state in each transition and then adding extra transitions assuming the goal was something else. An obvious choice for these extra goals is to choose states that were actually reached during the episode.
 
 %
 %
@@ -36,31 +39,40 @@ In \parencite[Appendix A]{HERPaper}, it is stated, that the neural network used 
 There are however many parameters, which have not been specified in \parencite{HERPaper}.
 %
 \subsubsection{Gridworld environment}
-The second envornment is a gridworld as introduced in the presentations. An agent can move along the cardinal directions on a cartesian grid with step size $1$. The agent starts on one square and the episode ends if it has reached a predefined goal square. There are some randomly placed walls on the grid where the agent cannot move. The edge of the square grid is treated as walls.
+The second environment is a gridworld as introduced in the presentations. An agent can move along the cardinal directions on a cartesian grid with step size $1$. The agent starts on one square and the episode ends if it has reached a predefined goal square. There are some randomly placed walls on the grid where the agent cannot move. The edge of the square grid is treated as walls.
 All actions are legal at all times. If the agent chooses an action that would move it into a wall, it does not move at all instead.
+
+The walls of the gridworld are generated automatically using the procedure described in Appendix \ref{appendix:maze_gen}. This makes the problem scalable and allows performing all experiments for this second problem.
+
+Similar to the robot-arm problem, I chose a fixed starting point but varied the goals within each maze between epochs. Any free square is a potential goal.
 %
 \subsection{Experiment setup}
 \subsubsection{Reward functions}
 In this implementation all reward functions depend only on the current state and the goal state. Since the goal state is not constant when using HER, we also pass that to the reward functions. Since rewards are typically maximized in Reinforcement Learning, we add a negative sign to the last three reward functions.
 Here let $s \in S$ be a state and $g \in S$ the desired goal state.
 
-\textbf{0-1 reward}
+\textbf{0-1 reward:}
 Reward 1 if goal is reached, 0 otherwise:
-$$R_{01}(s, g) = \cases^{1 \text{if} s=g}_{0 \text{else}}$$
+$$
+R_{01}(s, g) = \begin{cases}
+\case {1 \text{ if } s=g} \\
+\case {0 \text{ else }}
+\end{cases}
+$$
 
-\textbf{MSE reward}
+\textbf{MSE reward:}
 Use mean squared error between state and goal as reward:
 $$R_{\text{MSE}}(s, g) = -\frac{1}{|s|} \sum_{i=1}^{|s|} \left| s_i - g_i \right|^2$$
 
-\textbf{MAE reward}
+\textbf{MAE reward:}
 Use mean absolute error between state and goal as reward:
 $$R_M(s, g) = -\frac{1}{|s|} \sum_{i=1}^{|s|} \left|s_i - g_i\right|$$
 
-\textbf{Euklidean reward}
+\textbf{Euklidean reward:}
 Use Euclidean distance between state and goal as reward:
 $$R_E(s, g) = -\sqrt{\sum_{i=1}^{|s|} \left(s_i - g_i\right)^2}$$
 
-\textbf{Manhatten reward}
+\textbf{Manhatten reward:}
 Use Manhatten distance between state and goal as reward:
 $$R_M(s, g) = -\sum_{i=1}^{|s|} \left|s_i - g_i\right|$$
 
