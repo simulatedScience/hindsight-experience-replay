@@ -38,6 +38,13 @@ class DDQNAgent:
 
     self.optimizer = optim.Adam(self.Q_network.parameters(), lr=self.learning_rate)
 
+    # move to GPU if available
+    self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    self.Q_network.to(self.device)
+    self.target_network.to(self.device)
+    self.optimizer.to(self.device)
+
+
 
   def push_experience(self, state, action, reward, next_state, done):
     self.memory.push(Experience(state, action, reward, next_state, done))
@@ -55,6 +62,7 @@ class DDQNAgent:
 
 
   def greedy_action(self, state):
+    state.to(self.device)
     with torch.no_grad():
       return self.Q_network(state).argmax()
 

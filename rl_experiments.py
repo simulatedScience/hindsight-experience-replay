@@ -91,12 +91,12 @@ class RLExperiments:
         for episode in range(num_episodes):
           # Run episode and cache trajectory
           episode_trajectory = []
-          state, goal = self.problem.reset()
+          state, goal = problem.reset()
 
           for step in range(max_steps):
             state_ = torch.cat((state, goal))
             action = agent.take_action(state_, eps)
-            next_state, reward, done = self.problem.step(action.item())
+            next_state, reward, done = problem.step(action.item())
             episode_trajectory.append(Experience(state, action, reward, next_state, done))
             state = next_state
             if done:
@@ -116,7 +116,7 @@ class RLExperiments:
               for _ in range(future_k):
                 future = random.randint(t, steps_taken)  # index of future time step
                 new_goal = episode_trajectory[future].next_state  # take future next_state and set as goal
-                new_reward, new_done = self.problem.compute_reward(next_state, new_goal)
+                new_reward, new_done = problem.compute_reward(next_state, new_goal)
                 state_, next_state_ = torch.cat((state, new_goal)), torch.cat((next_state, new_goal))
                 agent.push_experience(state_, action, new_reward, next_state_, new_done)
 
@@ -161,7 +161,7 @@ class RLExperiments:
     plt.ylabel("Success rate")
     plt.title(f"HER for DQN - {problem_size} bits")
     plt.grid(color="#dddddd")
-    filename = f"{self.problem}_exp1_{n_epochs}_epochs.png"
+    filename = f"{problem}_exp1_{n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
     plt.clf() # clear plot
 
@@ -182,15 +182,15 @@ class RLExperiments:
         label = "HER" if her else "DQN"
         print(f"start training with {label}, {problem_size} bits")
         success_rates = self.train(problem, problem.get_max_steps(), max_n_epochs, her)
-        final_success_rates[her].append(success_rates[-1])
-    plt.plot(problem_sizes, final_success_rates[0], linestyle="-", label="HER+DQN")
-    plt.plot(problem_sizes, final_success_rates[1], linestyle="-", label="DQN")
+        final_success_rates[her].append(success_rates[-1]) # True = 1, False = 0
+    plt.plot(problem_sizes, final_success_rates[0], linestyle="-", label="DQN")
+    plt.plot(problem_sizes, final_success_rates[1], linestyle="-", label="HER")
     plt.legend()
     plt.xlabel("Number of bits")
     plt.ylabel("Final success rate")
     plt.title(f"Final success HER for DQN - {max_n_epochs} epochs")
     plt.grid(color="#dddddd")
-    filename = f"{self.problem}_exp2_{max_n_epochs}_epochs_{problem_size_step}_step.png"
+    filename = f"{problem}_exp2_{max_n_epochs}_epochs_{problem_size_step}_step.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
     plt.clf() # clear plot
 
@@ -223,6 +223,6 @@ class RLExperiments:
     plt.ylabel("Success rate")
     plt.title(f"HER for DQN - {problem_size} bits")
     plt.grid(color="#dddddd")
-    filename = f"{self.problem}_exp3_{n_epochs}_epochs.png"
+    filename = f"{problem}_exp3_{n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
     plt.clf() # clear plot
