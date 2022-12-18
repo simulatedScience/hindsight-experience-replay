@@ -6,6 +6,8 @@ import random
 
 import torch
 import matplotlib.pyplot as plt
+# hsv_to_rgb
+from matplotlib.colors import hsv_to_rgb
 
 from ddqn_agent import DDQNAgent, Experience
 from rl_problem import RLProblem
@@ -159,7 +161,7 @@ class RLExperiments:
     plt.legend()
     plt.xlabel("Epoch")
     plt.ylabel("Success rate")
-    plt.title(f"HER for DQN - {problem_size} bits")
+    plt.title(f"Exp. 1: HER for DQN - {problem}")
     plt.grid(color="#dddddd")
     filename = f"{problem}_exp1_{n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
@@ -183,12 +185,12 @@ class RLExperiments:
         print(f"start training with {label}, {problem_size} bits")
         success_rates = self.train(problem, problem.get_max_steps(), max_n_epochs, her)
         final_success_rates[her].append(success_rates[-1]) # True = 1, False = 0
-    plt.plot(problem_sizes, final_success_rates[0], linestyle="-", label="DQN")
     plt.plot(problem_sizes, final_success_rates[1], linestyle="-", label="HER")
+    plt.plot(problem_sizes, final_success_rates[0], linestyle="-", label="DQN")
     plt.legend()
     plt.xlabel("Number of bits")
     plt.ylabel("Final success rate")
-    plt.title(f"Final success HER for DQN - {max_n_epochs} epochs")
+    plt.title(f"Exp. 2: Final success HER for DQN - {problem}, {max_n_epochs} epochs")
     plt.grid(color="#dddddd")
     filename = f"{problem}_exp2_{max_n_epochs}_epochs_{problem_size_step}_step.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
@@ -206,7 +208,7 @@ class RLExperiments:
     """
     linestyles = ["-", "--", "-.", ":"]*(len(rewards)//4 + 1)
     print("starting experiment 3")
-    for reward, linestyle in zip(rewards, linestyles):
+    for i, (reward, linestyle) in enumerate(zip(rewards, linestyles)):
       problem = self.problem_type(problem_size, reward)
       for her in [True, False]:
         label = "HER" if her else "DQN"
@@ -217,12 +219,23 @@ class RLExperiments:
             range(1, len(success_rates) + 1),
             success_rates,
             linestyle=linestyle,
+            color=get_color(her, i),
             label=label)
     plt.legend()
     plt.xlabel("Epoch")
     plt.ylabel("Success rate")
-    plt.title(f"HER for DQN - {problem_size} bits")
+    plt.title(f"Exp. 3: HER and reward shaping - {problem}")
     plt.grid(color="#dddddd")
     filename = f"{problem}_exp3_{n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
     plt.clf() # clear plot
+
+def get_color(her, reward_index):
+  if her: # blue tone depending on reward index
+    hue = 222
+  else: # orange tone depending on reward index
+    hue = 30
+  sat = 60 + 20 * reward_index
+  val = 100 - 20 * reward_index
+  # return color for matplotlib
+  return hsv_to_rgb((hue/360, sat/100, val/100))
