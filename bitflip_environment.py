@@ -38,6 +38,9 @@ class BitFlipEnvironment(RLProblem):
   def get_state_size(self):
     return self.n_bits*2
 
+  def get_max_steps(self):
+    return self.n_bits
+
   def reset(self):
     self.state = torch.randint(2, size=(self.n_bits, ), dtype=torch.float)
     self.goal = torch.randint(2, size=(self.n_bits, ), dtype=torch.float)

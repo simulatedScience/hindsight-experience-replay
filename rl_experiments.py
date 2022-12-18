@@ -13,7 +13,6 @@ from rl_problem import RLProblem
 class RLExperiments:
   def __init__(self, problem: RLProblem):
     self.problem_type = problem
-    self.problem: self.problem_type = None
     self.dqn_params = {
       "discount_factor": 0.98,
       "learning_rate": 0.001,
@@ -40,13 +39,13 @@ class RLExperiments:
     }
 
   def train(self,
-      problem_size: int = 10,
+      problem: RLProblem,
+      max_steps: int = 100,
       num_epochs: int = 10,
       hindsight_replay: bool = True,
       eps_max: float = 0.2,
       eps_min: float = 0.0,
-      exploration_fraction: float = 0.7,
-      reward_type: str = "01"):
+      exploration_fraction: float = 0.7):
     """
     Training loop for the bit flip experiment introduced in https://arxiv.org/pdf/1707.01495.pdf using DQN or DQN with
     hindsight experience replay. 
@@ -54,7 +53,8 @@ class RLExperiments:
     number of epochs according to the parameter `exploration_fraction`.
     
     Args:
-        problem_size (int): Number of bits in the bit flip environment.
+        problem (RLProblem): Problem to solve (must already be initialized)
+        max_steps (int): Maximum number of steps (= actions) per episode.
         num_epochs (int): Number of epochs to train for.
         hindsight_replay (bool): Whether to use hindsight experience replay or not.
         eps_max (float): Maximum exploration rate.
@@ -66,17 +66,14 @@ class RLExperiments:
     Returns:
         (list): List of success rates over the epochs.
     """
-    # initialize problem
-    self.problem = self.problem_type(problem_size, reward_type)
-
     # Parameters taken from the paper, some additional once are found in the constructor of the DQNAgent class.
     future_k = 4
     num_cycles = 50
     num_episodes = 16
     num_opt_steps = 40
 
-    state_size = self.problem.get_state_size()
-    num_actions = self.problem.get_num_actions()
+    state_size = problem.get_state_size()
+    num_actions = problem.get_num_actions()
     agent = DDQNAgent(
         state_size, 
         num_actions,
@@ -96,7 +93,7 @@ class RLExperiments:
           episode_trajectory = []
           state, goal = self.problem.reset()
 
-          for step in range(problem_size):
+          for step in range(max_steps):
             state_ = torch.cat((state, goal))
             action = agent.take_action(state_, eps)
             next_state, reward, done = self.problem.step(action.item())
@@ -148,14 +145,15 @@ class RLExperiments:
         n_epochs (int, optional): Number of epochs to train for. Defaults to 30.
     """
     print("starting experiment 1")
+    problem = self.problem_type(problem_size, "01")
     for her in [True, False]:
       label = "HER" if her else "DQN"
       print(f"start training with {label}")
-      success = self.train(problem_size, n_epochs, her)
+      success_rates = self.train(problem, problem.get_max_steps(), n_epochs, her)
       label += f" (01)"
       plt.plot(
-          range(1, n_epochs + 1),
-          success,
+          range(1, len(success_rates) + 1),
+          success_rates,
           linestyle="-",
           label=label)
     plt.legend()
@@ -165,7 +163,7 @@ class RLExperiments:
     plt.grid(color="#dddddd")
     filename = f"{self.problem}_exp1_{n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
-    # plt.show()
+    plt.clf() # clear plot
 
   def experiment_2(self, max_problem_size=30, max_n_epochs=30, problem_size_step=5):
     """
@@ -177,14 +175,16 @@ class RLExperiments:
     """
     print("starting experiment 2")
     problem_sizes = list(range(problem_size_step, max_problem_size + 1, problem_size_step))
-    for her in [True, False]:
-      final_success_rates = []
-      label = "HER" if her else "DQN"
-      for problem_size in problem_sizes:
+    final_success_rates = [[], []]
+    for problem_size in problem_sizes:
+      problem = self.problem_type(problem_size, "01")
+      for her in [True, False]:
+        label = "HER" if her else "DQN"
         print(f"start training with {label}, {problem_size} bits")
-        success = self.train(problem_size, max_n_epochs, her)
-        final_success_rates.append(success[-1])
-      plt.plot(problem_sizes, final_success_rates, linestyle="-", label=label)
+        success_rates = self.train(problem, problem.get_max_steps(), max_n_epochs, her)
+        final_success_rates[her].append(success_rates[-1])
+    plt.plot(problem_sizes, final_success_rates[0], linestyle="-", label="HER+DQN")
+    plt.plot(problem_sizes, final_success_rates[1], linestyle="-", label="DQN")
     plt.legend()
     plt.xlabel("Number of bits")
     plt.ylabel("Final success rate")
@@ -192,7 +192,7 @@ class RLExperiments:
     plt.grid(color="#dddddd")
     filename = f"{self.problem}_exp2_{max_n_epochs}_epochs_{problem_size_step}_step.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
-    # plt.show()
+    plt.clf() # clear plot
 
 
   def experiment_3(self, rewards, problem_size=25, n_epochs=25):
@@ -207,12 +207,17 @@ class RLExperiments:
     linestyles = ["-", "--", "-.", ":"]*(len(rewards)//4 + 1)
     print("starting experiment 3")
     for reward, linestyle in zip(rewards, linestyles):
+      problem = self.problem_type(problem_size, reward)
       for her in [True, False]:
         label = "HER" if her else "DQN"
         print(f"start training with {label}, {reward}-reward")
-        success = self.train(problem_size, n_epochs, her, reward_type=reward)
+        success_rates = self.train(problem, problem.get_max_steps(), n_epochs, her)
         label += f" ({reward})"
-        plt.plot(range(1, n_epochs + 1), success, linestyle=linestyle, label=label)
+        plt.plot(
+            range(1, len(success_rates) + 1),
+            success_rates,
+            linestyle=linestyle,
+            label=label)
     plt.legend()
     plt.xlabel("Epoch")
     plt.ylabel("Success rate")
@@ -220,4 +225,4 @@ class RLExperiments:
     plt.grid(color="#dddddd")
     filename = f"{self.problem}_exp3_{n_epochs}_epochs.png"
     plt.savefig(os.path.join("plots", filename), dpi=300)
-    # plt.show()
+    plt.clf() # clear plot

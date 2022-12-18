@@ -22,6 +22,12 @@ class RLProblem:
     """
     pass
 
+  def get_max_steps(self):
+    """
+    get the maximum number of steps allowed in the environment. This usually depends on the problem size.
+    """
+    pass
+
   def reset(self):
     """
     reset the environment to the initial state. This may be any random state from which the goal can be reached.

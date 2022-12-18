@@ -49,9 +49,11 @@ class GridworldEnvironment(RLProblem):
   def get_num_actions(self):
     return 4
 
-
   def get_state_size(self):
     return 4 # position and goal
+
+  def get_max_steps(self):
+    return 3 * self.size
 
   def generate_maze(self):
     """
