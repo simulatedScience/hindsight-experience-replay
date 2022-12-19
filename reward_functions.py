@@ -42,16 +42,16 @@ def reward_mae(state: torch.tensor, goal: torch.tensor):
   return -torch.norm(state - goal, p=1)
 
 
-def reward_euklidean(state: torch.tensor, goal: torch.tensor):
+def reward_euclidean(state: torch.tensor, goal: torch.tensor):
   """
-  Compute the negative euklidean distance between the state and the goal.
+  Compute the negative euclidean distance between the state and the goal.
 
   Args:
       state (torch.tensor): the current state
       goal (torch.tensor): the goal state
 
   Returns:
-      torch.tensor: the euklidean distance between the state and the goal
+      torch.tensor: the euclidean distance between the state and the goal
   """
   return -torch.norm(state - goal)
 

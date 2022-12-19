@@ -16,6 +16,6 @@ playground.config_dqn(
 # playground.experiment_2(max_problem_size=20, max_n_epochs=20, problem_size_step=5)
 playground.experiment_2(max_problem_size=12, max_n_epochs=10, problem_size_step=3)
 # experiment_3: compare DQN and DQN with HER on bit flip environment for different reward functions
-rewards = ["01", "euklidean", "manhattan"]
+rewards = ["01", "euclidean", "manhattan"]
 # playground.experiment_3(rewards, problem_size=15, n_epochs=10)
 # playground.experiment_3(rewards, problem_size=8, n_epochs=10)

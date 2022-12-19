@@ -8,7 +8,7 @@ from typing import Tuple
 import torch
 
 from rl_problem import RLProblem
-from reward_functions import reward_01, reward_euklidean, reward_manhattan
+from reward_functions import reward_01, reward_euclidean, reward_manhattan
 from maze_generator import generate_maze
 
 class GridworldEnvironment(RLProblem):
@@ -22,7 +22,7 @@ class GridworldEnvironment(RLProblem):
 
     Args:
         size: number of rows and columns in the grid
-        reward_type: "01" or "euklidean"
+        reward_type: "01" or "euclidean"
     """
     self.size = size
     self.goal_type = goal_type
@@ -30,12 +30,12 @@ class GridworldEnvironment(RLProblem):
     self.path_eps = path_eps
     if reward_type == "01":
       self.reward_function = reward_01
-    elif reward_type.lower() == "euklidean":
-      self.reward_function = reward_euklidean
+    elif reward_type.lower() == "euclidean":
+      self.reward_function = reward_euclidean
     elif reward_type.lower() == "manhattan":
       self.reward_function = reward_manhattan
     else:
-      raise ValueError("Invalid reward type. Valid options are: 01, euklidean, manhattan")
+      raise ValueError("Invalid reward type. Valid options are: 01, euclidean, manhattan")
     # initialize maze, state and goal
     self.state: torch.tensor = None
     self.goal: torch.tensor = None
